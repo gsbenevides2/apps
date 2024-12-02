@@ -1,10 +1,7 @@
 export const removeScriptChars = (str: string): string => {
   const removedPlus = str.replace(/\+/g, "").replaceAll(" ", "");
   const removedBrackets = removedPlus.replace(/[\[\]{}()<>]/g, "");
-  const normalized = removedBrackets.normalize("NFD").replace(
-    /[\u0300-\u036f]/g,
-    "",
-  );
+  const normalized = removedBrackets.normalize("NFD").replace(/[\u0300-\u036f]/g, "");
   return normalized;
 };
 
@@ -26,12 +23,24 @@ export const removeDirtyCookies = (headers?: Headers) => {
   }
   const existingCookie = removeNonAscChars(headers.get("cookie") || "");
   // remove only brackets
-  const removedBrackets = existingCookie?.replace(/[\[\]]/g, "").normalize(
-    "NFD",
-  ).replace(
-    /[\u0300-\u036f]/g,
-    "",
-  );
+  const removedBrackets = existingCookie
+    ?.replace(/[\[\]]/g, "")
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "");
   headers.set("cookie", `${removedBrackets}`);
+  console.log("headers", headers);
   return headers;
+};
+
+export const removeEmptyHeaders = (headers?: Headers) => {
+  if (!headers) {
+    return;
+  }
+  const entries = Array.from(headers.entries());
+  const filtered = entries.filter(([, value]) => value !== "");
+  return new Headers(filtered);
+};
+
+export const normalizeHeaders = (headers?: Headers) => {
+  return removeEmptyHeaders(removeDirtyCookies(headers));
 };

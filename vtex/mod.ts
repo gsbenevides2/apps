@@ -1,41 +1,24 @@
+import { type App as A, type AppContext as AC, type AppMiddlewareContext as AMC, type AppRuntime, type ManifestOf } from "@deco/deco";
+import { Markdown } from "../decohub/components/Markdown.tsx";
 import { createGraphqlClient } from "../utils/graphql.ts";
 import { createHttpClient } from "../utils/http.ts";
+import { normalizeHeaders, removeDirtyCookies } from "../utils/normalize.ts";
+import type { Secret } from "../website/loaders/secret.ts";
 import workflow from "../workflows/mod.ts";
 import manifest, { Manifest } from "./manifest.gen.ts";
 import { middleware } from "./middleware.ts";
+import { PreviewVtex } from "./preview/Preview.tsx";
 import { SP, VTEXCommerceStable } from "./utils/client.ts";
 import { fetchSafe } from "./utils/fetchVTEX.ts";
-import { OpenAPI as VCS } from "./utils/openapi/vcs.openapi.gen.ts";
 import { OpenAPI as API } from "./utils/openapi/api.openapi.gen.ts";
 import { OpenAPI as MY } from "./utils/openapi/my.openapi.gen.ts";
+import { OpenAPI as VCS } from "./utils/openapi/vcs.openapi.gen.ts";
 import { Segment } from "./utils/types.ts";
-import type { Secret } from "../website/loaders/secret.ts";
-import { removeDirtyCookies } from "../utils/normalize.ts";
-import { Markdown } from "../decohub/components/Markdown.tsx";
-import { PreviewVtex } from "./preview/Preview.tsx";
-import {
-  type App as A,
-  type AppContext as AC,
-  type AppMiddlewareContext as AMC,
-  type AppRuntime,
-  type ManifestOf,
-} from "@deco/deco";
 export type App = ReturnType<typeof VTEX>;
 export type AppContext = AC<App>;
 export type AppManifest = ManifestOf<App>;
 export type AppMiddlewareContext = AMC<App>;
-export type SegmentCulture = Omit<
-  Partial<Segment>,
-  | "utm_medium"
-  | "utm_campaign"
-  | "utm_source"
-  | "utmi_campaign"
-  | "utmi_part"
-  | "utmi_page"
-  | "campaigns"
-  | "priceTables"
-  | "regionId"
->;
+export type SegmentCulture = Omit<Partial<Segment>, "utm_medium" | "utm_campaign" | "utm_source" | "utmi_campaign" | "utmi_part" | "utmi_page" | "campaigns" | "priceTables" | "regionId">;
 /** @title VTEX */
 export interface Props {
   /**
@@ -84,20 +67,10 @@ export const color = 0xf71963;
  * @category Ecommmerce
  * @logo https://raw.githubusercontent.com/deco-cx/apps/main/vtex/logo.png
  */
-export default function VTEX(
-  { appKey, appToken, account, publicUrl, salesChannel, ...props }: Props,
-) {
+export default function VTEX({ appKey, appToken, account, publicUrl, salesChannel, ...props }: Props) {
   const headers = new Headers();
-  appKey &&
-    headers.set(
-      "X-VTEX-API-AppKey",
-      typeof appKey === "string" ? appKey : appKey?.get?.() ?? "",
-    );
-  appToken &&
-    headers.set(
-      "X-VTEX-API-AppToken",
-      typeof appToken === "string" ? appToken : appToken?.get?.() ?? "",
-    );
+  appKey && headers.set("X-VTEX-API-AppKey", typeof appKey === "string" ? appKey : appKey?.get?.() ?? "");
+  appToken && headers.set("X-VTEX-API-AppToken", typeof appToken === "string" ? appToken : appToken?.get?.() ?? "");
   const sp = createHttpClient<SP>({
     base: `https://sp.vtex.com`,
     processHeaders: removeDirtyCookies,
@@ -114,15 +87,14 @@ export default function VTEX(
     fetcher: fetchSafe,
   });
   const io = createGraphqlClient({
-    endpoint:
-      `https://${account}.vtexcommercestable.com.br/api/io/_v/private/graphql/v1`,
+    endpoint: `https://${account}.vtexcommercestable.com.br/api/io/_v/private/graphql/v1`,
     processHeaders: removeDirtyCookies,
     fetcher: fetchSafe,
   });
   const vcs = createHttpClient<VCS>({
     base: `https://${account}.vtexcommercestable.com.br`,
     fetcher: fetchSafe,
-    processHeaders: removeDirtyCookies,
+    processHeaders: normalizeHeaders,
     headers: headers,
   });
   const api = createHttpClient<API>({
@@ -143,9 +115,7 @@ export default function VTEX(
     my,
     api,
   };
-  const app: A<Manifest, typeof state, [
-    ReturnType<typeof workflow>,
-  ]> = {
+  const app: A<Manifest, typeof state, [ReturnType<typeof workflow>]> = {
     state,
     manifest,
     middleware,
@@ -154,9 +124,7 @@ export default function VTEX(
   return app;
 }
 export const preview = async (props: AppRuntime) => {
-  const markdownContent = await Markdown(
-    new URL("./README.md", import.meta.url).href,
-  );
+  const markdownContent = await Markdown(new URL("./README.md", import.meta.url).href);
   return {
     Component: PreviewVtex,
     props: {
