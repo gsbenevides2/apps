@@ -28,7 +28,6 @@ export const removeDirtyCookies = (headers?: Headers) => {
     .normalize("NFD")
     .replace(/[\u0300-\u036f]/g, "");
   headers.set("cookie", `${removedBrackets}`);
-  console.log("headers", headers);
   return headers;
 };
 
